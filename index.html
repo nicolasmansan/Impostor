@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jogo do Impostor</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: white;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .card {
+      background: #2c2c2c;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .player-card {
+      background: #3b3b3b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .secret {
+      margin-top: 10px;
+      padding: 10px;
+      background: #111;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🕵️ Jogo do Impostor</h1>
+
+  <div class="card">
+
+    <label>Número de jogadores</label>
+    <input type="number" id="playerCount" min="3" max="20" value="4" />
+
+    <button onclick="generatePlayerInputs()">
+      Gerar jogadores
+    </button>
+
+    <div id="playersContainer"></div>
+
+    <label>Tema do jogo</label>
+    <input type="text" id="theme" placeholder="Ex: comida, filmes, esportes..." />
+
+    <button onclick="startGame()">
+      Iniciar jogo
+    </button>
+
+  </div>
+
+  <div id="gameArea" class="card hidden"></div>
+
+  <script>
+
+    const GEMINI_API_KEY = "AIzaSyAtKprjxK0hybJNZXdxeMRGY1HYiA0BBSc";
+
+    let gameData = [];
+
+    function generatePlayerInputs() {
+
+      const count = parseInt(document.getElementById("playerCount").value);
+
+      const container = document.getElementById("playersContainer");
+
+      container.innerHTML = "";
+
+      for (let i = 0; i < count; i++) {
+
+        container.innerHTML += `
+          <input 
+            type="text" 
+            placeholder="Nome do jogador ${i + 1}" 
+            class="player-name"
+          />
+        `;
+      }
+    }
+
+ async function generateWord(theme) {
+
+  const wordsByTheme = {
+
+    comida: [
+      "Pizza",
+      "Hamburguer",
+      "Sushi",
+      "Lasanha",
+      "Batata",
+      "Chocolate",
+      "Sorvete",
+      "Tacos",
+      "Frango",
+      "Macarrão",
+      "Churrasco",
+      "Crepe",
+      "Brigadeiro",
+      "Paçoca",
+      "Pudim"
+    ],
+
+    esportes: [
+      "Futebol",
+      "Crossfit",
+      "Natação",
+      "Basquete",
+      "Tênis",
+      "Vôlei",
+      "Judô",
+      "Ciclismo",
+      "Skate",
+      "Surfe",
+      "Boxe",
+      "Ginástica",
+      "Rugby",
+      "Handebol"
+    ],
+
+    filmes: [
+      "Batman",
+      "Titanic",
+      "Avatar",
+      "Shrek",
+      "Matrix",
+      "Frozen",
+      "Interestelar",
+      "Vingadores",
+      "Coringa",
+      "Parasita",
+      "Coco",
+      "Up",
+      "Lion King",
+      "Gladiador"
+    ],
+
+    animais: [
+      "Leão",
+      "Tigre",
+      "Elefante",
+      "Girafa",
+      "Macaco",
+      "Pinguim",
+      "Tubarão",
+      "Cobra",
+      "Águia",
+      "Lobo",
+      "Urso",
+      "Tartaruga",
+      "Polvo",
+      "Camelo"
+    ],
+
+    paises: [
+      "Brasil",
+      "Japão",
+      "Alemanha",
+      "França",
+      "Argentina",
+      "Itália",
+      "China",
+      "Índia",
+      "México",
+      "Canadá",
+      "Austrália",
+      "Portugal"
+    ],
+
+    profissoes: [
+      "Médico",
+      "Engenheiro",
+      "Professor",
+      "Piloto",
+      "Chef",
+      "Bombeiro",
+      "Astronauta",
+      "Arquiteto",
+      "Fotógrafo",
+      "Jornalista",
+      "Músico",
+      "Veterinário"
+    ],
+
+    objetos: [
+      "Guarda-chuva",
+      "Relógio",
+      "Mochila",
+      "Óculos",
+      "Lanterna",
+      "Bússola",
+      "Tesoura",
+      "Cofre",
+      "Binóculo",
+      "Canivete",
+      "Cadeado",
+      "Megafone",
+      "Calculadora",
+      "Termômetro",
+      "Gravata",
+      "Chapéu",
+      "Maleta",
+      "Espelho"
+    ]
+
+  };
+
+  const normalizedTheme = theme.toLowerCase();
+
+  const words = wordsByTheme[normalizedTheme];
+
+  if (!words || words.length === 0) {
+
+    return "Objeto";
+
+  }
+
+  return words[
+    Math.floor(Math.random() * words.length)
+  ];
+
+}  
+
+async function startGame() {
+
+      const playerInputs = document.querySelectorAll(".player-name");
+
+      const players = Array.from(playerInputs)
+        .map(x => x.value.trim())
+        .filter(x => x.length > 0);
+
+      if (players.length < 3) {
+        alert("Informe pelo menos 3 jogadores.");
+        return;
+      }
+
+      const theme = document.getElementById("theme").value.trim();
+
+      if (!theme) {
+        alert("Informe um tema.");
+        return;
+      }
+
+      const gameArea = document.getElementById("gameArea");
+
+      gameArea.innerHTML = "<h2>Gerando palavra...</h2>";
+
+      gameArea.classList.remove("hidden");
+
+      try {
+
+        const secretWord = await generateWord(theme);
+
+        const impostorIndex = Math.floor(Math.random() * players.length);
+
+        gameData = players.map((player, index) => {
+
+          return {
+            name: player,
+            isImpostor: index === impostorIndex,
+            word: index === impostorIndex ? null : secretWord,
+            revealed: false
+          };
+
+        });
+
+        renderPlayers();
+
+      } catch (err) {
+
+        console.error(err);
+
+        alert("Erro ao gerar palavra.");
+
+      }
+
+    }
+
+    function renderPlayers() {
+
+      const gameArea = document.getElementById("gameArea");
+
+      gameArea.innerHTML = "<h2>Jogadores</h2>";
+
+      gameData.forEach((player, index) => {
+
+        const playerDiv = document.createElement("div");
+
+        playerDiv.className = "player-card";
+
+        playerDiv.innerHTML = `
+          <h3>${player.name}</h3>
+
+          <button onclick="revealWord(${index})">
+            Mostrar palavra
+          </button>
+
+          <div 
+            id="secret-${index}" 
+            class="secret hidden">
+          </div>
+        `;
+
+        gameArea.appendChild(playerDiv);
+
+      });
+
+    }
+
+    function revealWord(index) {
+
+      const player = gameData[index];
+
+      const secretDiv = document.getElementById(`secret-${index}`);
+      const btn = secretDiv.previousElementSibling;
+
+      if (player.isImpostor) {
+
+        secretDiv.innerHTML = `
+          🕵️ Você é o IMPOSTOR<br><br>
+          <span id="timer-${index}" style="font-size:14px;color:#aaa;">Ocultando em 5s...</span>
+        `;
+
+      } else {
+
+        secretDiv.innerHTML = `
+          Palavra: <br><br>
+          🎯 ${player.word}<br><br>
+          <span id="timer-${index}" style="font-size:14px;color:#aaa;">Ocultando em 5s...</span>
+        `;
+
+      }
+
+      secretDiv.classList.remove("hidden");
+      btn.disabled = true;
+
+      let remaining = 5;
+      const timerSpan = document.getElementById(`timer-${index}`);
+
+      const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          secretDiv.classList.add("hidden");
+          secretDiv.innerHTML = "";
+          btn.disabled = false;
+        } else {
+          timerSpan.textContent = `Ocultando em ${remaining}s...`;
+        }
+      }, 1000);
+
+    }
+
+    generatePlayerInputs();
+
+  </script>
+
+</body>
+</html>
